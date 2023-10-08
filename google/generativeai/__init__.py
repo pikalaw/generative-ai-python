@@ -89,6 +89,8 @@ from google.generativeai.models import create_tuned_model
 from google.generativeai.models import update_tuned_model
 from google.generativeai.models import delete_tuned_model
 
+from .stubby.retriever_service import *
+
 from google.generativeai.client import configure
 
 __version__ = version.__version__
