@@ -133,9 +133,9 @@ class RetrieverService(BaseModel):
                 RelevantChunk(
                     chunk_relevance_score=1,
                     chunk=Chunk(
-                        name="/corpora/123/document/456/chunk/789",
+                        name="/corpora/123/documents/456/chunks/789",
                         data=ChunkData(
-                            value="The author played a lot of Pokemon growing up."))),
+                            value="The ants ran away from the rain."))),
             ],
         )
 
