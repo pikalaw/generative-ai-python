@@ -90,6 +90,7 @@ from google.generativeai.models import update_tuned_model
 from google.generativeai.models import delete_tuned_model
 
 from .stubby.retriever_service import *
+from .stubby.text_service import *
 
 from google.generativeai.client import configure
 
