@@ -99,6 +99,16 @@ class GetDocumentRequest(BaseModel):
     name: str
 
 
+class ListCorporaRequest(BaseModel):
+    page_size: int
+    page_token: str | None = None
+
+
+class ListCorporaResponse(BaseModel):
+    corpora: List[Corpus]
+    next_page_token: str | None = None
+
+
 # Source: google/ai/generativelanguage/v1main/retriever_service.proto
 class RetrieverService(BaseModel):
     _createdDocId: Set[str] = set()
@@ -109,6 +119,20 @@ class RetrieverService(BaseModel):
         if request.corpus.name == None:
             request.corpus.name = f"/corpora/{uuid.uuid4()}"
         return request.corpus
+
+    def list_corpora(self, request: ListCorporaRequest) -> ListCorporaResponse:
+        logger.info(
+            f"\n\nRetrieverService.list_corpora({pretty(request)})")
+        if request.page_token is None:
+            return ListCorporaResponse(
+                corpora=[Corpus(name="/corpora/123"),
+                         Corpus(name="/corpora/456")],
+                next_page_token="go-next-page",
+            )
+        else:
+            return ListCorporaResponse(
+                corpora=[Corpus(name="/corpora/789")],
+            )
 
     def create_document(self, request: CreateDocumentRequest) -> Document:
         logger.info(
