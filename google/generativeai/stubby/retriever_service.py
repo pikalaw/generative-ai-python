@@ -109,6 +109,11 @@ class ListCorporaResponse(BaseModel):
     next_page_token: str | None = None
 
 
+class DeleteCorpusRequest(BaseModel):
+    name: str
+    force: bool
+
+
 # Source: google/ai/generativelanguage/v1main/retriever_service.proto
 class RetrieverService(BaseModel):
     _createdDocId: Set[str] = set()
@@ -133,6 +138,10 @@ class RetrieverService(BaseModel):
             return ListCorporaResponse(
                 corpora=[Corpus(name="/corpora/789")],
             )
+
+    def delete_corpus(self, request: DeleteCorpusRequest) -> None:
+        logger.info(
+            f"\n\nRetrieverService.delete_corpus({pretty(request)})")
 
     def create_document(self, request: CreateDocumentRequest) -> Document:
         logger.info(
