@@ -114,6 +114,17 @@ class DeleteCorpusRequest(BaseModel):
     force: bool
 
 
+class ListDocumentsRequest(BaseModel):
+    parent: str
+    page_size: int
+    page_token: str | None = None
+
+
+class ListDocumentsResponse(BaseModel):
+    documents: List[Document]
+    next_page_token: str | None = None
+
+
 # Source: google/ai/generativelanguage/v1main/retriever_service.proto
 class RetrieverService(BaseModel):
     _createdDocId: Set[str] = set()
@@ -149,6 +160,34 @@ class RetrieverService(BaseModel):
         self._createdDocId.add(request.document.name)
         return request.document
 
+    def delete_document(self, request: DeleteDocumentRequest) -> None:
+        logger.info(
+            f"\n\nRetrieverService.delete_document({pretty(request)})")
+
+    def list_documents(self, request: ListDocumentsRequest) -> ListDocumentsResponse:
+        logger.info(
+            f"\n\nRetrieverService.list_documents({pretty(request)})")
+        if request.page_token is None:
+            return ListDocumentsResponse(
+                documents=[Document(name="/corpora/123/documents/456"),
+                           Document(name="/corpora/456/documents/789")],
+                next_page_token="go-next-page",
+            )
+        else:
+            return ListDocumentsResponse(
+                documents=[Document(name="/corpora/789/documents/123")],
+            )
+
+    def get_document(self, request: GetDocumentRequest) -> Document | None:
+        logger.info(
+            f"\n\nRetrieverService.get_document({pretty(request)})")
+        if request.name in self._createdDocId:
+            logger.info("document exists")
+            return Document(name=request.name)
+        else:
+            logger.info("no such document")
+            return None
+
     def create_chunk(self, request: CreateChunkRequest) -> Chunk:
         logger.info(
             f"\n\nRetrieverService.create_chunk({pretty(request)})")
@@ -171,17 +210,3 @@ class RetrieverService(BaseModel):
                             value="The ants ran away from the rain."))),
             ],
         )
-
-    def delete_document(self, request: DeleteDocumentRequest) -> None:
-        logger.info(
-            f"\n\nRetrieverService.delete_document({pretty(request)})")
-
-    def get_document(self, request: GetDocumentRequest) -> Document | None:
-        logger.info(
-            f"\n\nRetrieverService.get_document({pretty(request)})")
-        if request.name in self._createdDocId:
-            logger.info("document exists")
-            return Document(name=request.name)
-        else:
-            logger.info("no such document")
-            return None
