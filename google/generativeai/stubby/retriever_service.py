@@ -133,7 +133,7 @@ class RetrieverService(BaseModel):
         logger.info(
             f"\n\nRetrieverService.create_corpus({pretty(request)})")
         if request.corpus.name == None:
-            request.corpus.name = f"/corpora/{uuid.uuid4()}"
+            request.corpus.name = f"corpora/{uuid.uuid4()}"
         return request.corpus
 
     def list_corpora(self, request: ListCorporaRequest) -> ListCorporaResponse:
@@ -141,13 +141,13 @@ class RetrieverService(BaseModel):
             f"\n\nRetrieverService.list_corpora({pretty(request)})")
         if request.page_token is None:
             return ListCorporaResponse(
-                corpora=[Corpus(name="/corpora/123"),
-                         Corpus(name="/corpora/456")],
+                corpora=[Corpus(name="corpora/123"),
+                         Corpus(name="corpora/456")],
                 next_page_token="go-next-page",
             )
         else:
             return ListCorporaResponse(
-                corpora=[Corpus(name="/corpora/789")],
+                corpora=[Corpus(name="corpora/789")],
             )
 
     def delete_corpus(self, request: DeleteCorpusRequest) -> None:
@@ -169,13 +169,13 @@ class RetrieverService(BaseModel):
             f"\n\nRetrieverService.list_documents({pretty(request)})")
         if request.page_token is None:
             return ListDocumentsResponse(
-                documents=[Document(name="/corpora/123/documents/456"),
-                           Document(name="/corpora/456/documents/789")],
+                documents=[Document(name="corpora/123/documents/456"),
+                           Document(name="corpora/456/documents/789")],
                 next_page_token="go-next-page",
             )
         else:
             return ListDocumentsResponse(
-                documents=[Document(name="/corpora/789/documents/123")],
+                documents=[Document(name="corpora/789/documents/123")],
             )
 
     def get_document(self, request: GetDocumentRequest) -> Document | None:
@@ -205,7 +205,7 @@ class RetrieverService(BaseModel):
                 RelevantChunk(
                     chunk_relevance_score=1,
                     chunk=Chunk(
-                        name="/corpora/123/documents/456/chunks/789",
+                        name="corpora/123/documents/456/chunks/789",
                         data=ChunkData(
                             value="The ants ran away from the rain."))),
             ],
