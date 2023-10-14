@@ -64,6 +64,10 @@ class RelevantChunk(BaseModel):
     chunk: Chunk
 
 
+class GetCorpusRequest(BaseModel):
+    name: str
+
+
 class CreateCorpusRequest(BaseModel):
     corpus: Corpus
 
@@ -151,6 +155,11 @@ class ListDocumentsResponse(BaseModel):
 # Source: google/ai/generativelanguage/v1main/retriever_service.proto
 class RetrieverService(BaseModel):
     _createdDocId: Set[str] = set()
+
+    def get_corpus(self, request: GetCorpusRequest) -> Corpus:
+        logger.info(
+            f"\n\nRetrieverService.get_corpus({pretty(request)})")
+        return Corpus(name=request.name)
 
     def create_corpus(self, request: CreateCorpusRequest) -> Corpus:
         logger.info(
