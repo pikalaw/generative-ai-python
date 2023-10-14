@@ -1,11 +1,15 @@
+import datetime
 from debugging.pretty_print import pretty
 from enum import Enum
 import logging
-from pydantic import BaseModel
-from typing import List, Set
+from pydantic import BaseModel, model_validator
+import re
+from typing import Iterator, List, Set
 import uuid
 
 
+default_doc_id = 'default-doc'
+default_page_size = 50
 logger = logging.getLogger(__name__)
 
 
@@ -40,7 +44,7 @@ class Corpus(BaseModel):
 
 
 class Document(BaseModel):
-    name: str
+    name: str | None = None
     display_name: str | None = None
     custom_metadata: List[CustomMetadata] | None = None
 
@@ -50,7 +54,7 @@ class ChunkData(BaseModel):
 
 
 class Chunk(BaseModel):
-    name: str
+    name: str | None = None
     data: ChunkData
     custom_metadata: List[CustomMetadata] | None = None
 
@@ -79,6 +83,14 @@ class BatchCreateChunkRequest(BaseModel):
     requests: List[CreateChunkRequest]
 
 
+class BatchCreateChunksResponse(BaseModel):
+    chunks: List[Chunk]
+
+
+class DeleteChunkRequest(BaseModel):
+    name: str
+
+
 class QueryCorpusRequest(BaseModel):
     name: str
     query: str
@@ -87,6 +99,17 @@ class QueryCorpusRequest(BaseModel):
 
 
 class QueryCorpusResponse(BaseModel):
+    relevant_chunks: List[RelevantChunk]
+
+
+class QueryDocumentRequest(BaseModel):
+    name: str
+    query: str
+    metadata_filters: List[MetadataFilter] | None = None
+    results_count: int = 1
+
+
+class QueryDocumentResponse(BaseModel):
     relevant_chunks: List[RelevantChunk]
 
 
@@ -157,6 +180,8 @@ class RetrieverService(BaseModel):
     def create_document(self, request: CreateDocumentRequest) -> Document:
         logger.info(
             f"\n\nRetrieverService.create_document({pretty(request)})")
+        if request.document.name is None:
+            request.document.name = f"{request.parent}/documents/{uuid.uuid4()}"
         self._createdDocId.add(request.document.name)
         return request.document
 
@@ -193,9 +218,15 @@ class RetrieverService(BaseModel):
             f"\n\nRetrieverService.create_chunk({pretty(request)})")
         return request.chunk
 
-    def batch_create_chunk(self, request: BatchCreateChunkRequest) -> None:
+    def batch_create_chunk(self, request: BatchCreateChunkRequest) -> BatchCreateChunksResponse:
         logger.info(
             f"\n\nRetrieverService.batch_create_chunk({pretty(request)})")
+        return BatchCreateChunksResponse(
+            chunks=[r.chunk for r in request.requests])
+
+    def delete_chunk(self, request: DeleteChunkRequest) -> None:
+        logger.info(
+            f"\n\nRetrieverService.delete_chunk({pretty(request)})")
 
     def query_corpus(self, request: QueryCorpusRequest) -> QueryCorpusResponse:
         logger.info(
@@ -207,6 +238,154 @@ class RetrieverService(BaseModel):
                     chunk=Chunk(
                         name="corpora/123/documents/456/chunks/789",
                         data=ChunkData(
-                            value="The ants ran away from the rain."))),
+                            value="The ants ran away from the rain."),
+                        custom_metadata=[
+                            CustomMetadata(key="author", value="Lawrence"),
+                            CustomMetadata(key="price", value="10"),
+                        ],
+                    )
+                ),
             ],
         )
+
+    def query_document(self, request: QueryDocumentRequest) -> QueryDocumentResponse:
+        logger.info(
+            f"\n\nRetrieverService.query_document({pretty(request)})")
+        return QueryDocumentResponse(
+            relevant_chunks=[
+                RelevantChunk(
+                    chunk_relevance_score=1,
+                    chunk=Chunk(
+                        name="corpora/123/documents/456/chunks/789",
+                        data=ChunkData(
+                            value="The ants ran away from the rain."),
+                        custom_metadata=[
+                            CustomMetadata(key="author", value="Lawrence"),
+                            CustomMetadata(key="price", value="10"),
+                        ],
+                    )
+                ),
+            ],
+        )
+
+
+_name_regex = re.compile(
+    r"^corpora/([^/]+?)(/documents/([^/]+?)(/chunks/([^/]+?))?)?$")
+
+
+class EntityName(BaseModel):
+    corpus_id: str
+    document_id: str | None = None
+    chunk_id: str | None = None
+
+    @model_validator(mode="after")
+    def validate_syntax(self) -> "EntityName":
+        if self.chunk_id is not None and self.document_id is None:
+            raise ValueError(f"Chunk must have document ID but found {self}")
+        return self
+
+    @classmethod
+    def from_any(cls, source: "EntityName | str") -> "EntityName":
+        if isinstance(source, EntityName):
+            return source
+        return EntityName.from_str(source)
+
+    @classmethod
+    def from_str(cls, encoded: str) -> "EntityName":
+        matched = _name_regex.match(encoded)
+        if not matched:
+            raise ValueError(f"Invalid entity name: {encoded}")
+
+        return cls(
+            corpus_id=matched.group(1),
+            document_id=matched.group(3),
+            chunk_id=matched.group(5),
+        )
+
+    def __repr__(self) -> str:
+        name = f"corpora/{self.corpus_id}"
+        if self.document_id is None:
+            return name
+        name += f"/documents/{self.document_id}"
+        if self.chunk_id is None:
+            return name
+        name += f"/chunks/{self.chunk_id}"
+        return name
+
+    def is_corpus(self) -> bool:
+        return self.document_id is None
+
+    def is_document(self) -> bool:
+        return self.chunk_id is None
+
+    def is_chunk(self) -> bool:
+        return self.chunk_id is not None
+
+
+def list_corpus() -> Iterator[Corpus]:
+    client = RetrieverService()
+    page_token: str | None = None
+    while True:
+        response = client.list_corpora(
+            ListCorporaRequest(page_size=default_page_size,
+                               page_token=page_token))
+        for corpus in response.corpora:
+            yield corpus
+        if response.next_page_token is None:
+            break
+        page_token = response.next_page_token
+
+
+def create_corpus(name: str | None = None, display_name: str | None = None) -> str:
+    new_display_name = display_name or f"Created on {datetime.datetime.now()}"
+
+    client = RetrieverService()
+    new_corpus = client.create_corpus(
+        CreateCorpusRequest(
+            corpus=Corpus(
+                name=name,
+                display_name=new_display_name)))
+
+    assert new_corpus.name is not None
+    return new_corpus.name
+
+
+def delete_corpus(name: str) -> None:
+    client = RetrieverService()
+    client.delete_corpus(
+        DeleteCorpusRequest(
+            name=name,
+            force=True))
+
+
+def create_document(
+        corpus_name: str,
+        name: str | None = None,
+        display_name: str | None = None,
+        metadata: List[CustomMetadata] | None = None) -> str:
+    new_display_name = display_name or f"Created on {datetime.datetime.now()}"
+
+    client = RetrieverService()
+    new_document = client.create_document(
+        CreateDocumentRequest(
+            parent=corpus_name,
+            document=Document(
+                name=name,
+                display_name=new_display_name,
+                custom_metadata=metadata)))
+
+    assert new_document.name is not None
+    return new_document.name
+
+
+def delete_document(name: str) -> None:
+    client = RetrieverService()
+    client.delete_document(
+        DeleteDocumentRequest(
+            name=name,
+            force=True))
+
+
+def delete_chunk(name: str) -> None:
+    client = RetrieverService()
+    client.delete_chunk(DeleteChunkRequest(name=name))
