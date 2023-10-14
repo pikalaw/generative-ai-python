@@ -322,7 +322,7 @@ class EntityName(BaseModel):
         return self.chunk_id is not None
 
 
-def list_corpus() -> Iterator[Corpus]:
+def list_corpora() -> Iterator[Corpus]:
     client = RetrieverService()
     page_token: str | None = None
     while True:
@@ -336,7 +336,11 @@ def list_corpus() -> Iterator[Corpus]:
         page_token = response.next_page_token
 
 
-def create_corpus(name: str | None = None, display_name: str | None = None) -> str:
+def create_corpus(name: str | None = None, display_name: str | None = None) -> Corpus:
+    if name is not None:
+        # Just check if the name is valid.
+        EntityName.from_any(name)
+
     new_display_name = display_name or f"Created on {datetime.datetime.now()}"
 
     client = RetrieverService()
@@ -347,7 +351,7 @@ def create_corpus(name: str | None = None, display_name: str | None = None) -> s
                 display_name=new_display_name)))
 
     assert new_corpus.name is not None
-    return new_corpus.name
+    return new_corpus
 
 
 def delete_corpus(name: str) -> None:
@@ -358,11 +362,27 @@ def delete_corpus(name: str) -> None:
             force=True))
 
 
+def list_documents(corpus_name: str) -> Iterator[Document]:
+    client = RetrieverService()
+    page_token: str | None = None
+    while True:
+        response = client.list_documents(
+            ListDocumentsRequest(
+                parent=corpus_name,
+                page_size=default_page_size,
+                page_token=page_token))
+        for document in response.documents:
+            yield document
+        if response.next_page_token is None:
+            break
+        page_token = response.next_page_token
+
+
 def create_document(
         corpus_name: str,
         name: str | None = None,
         display_name: str | None = None,
-        metadata: List[CustomMetadata] | None = None) -> str:
+        metadata: List[CustomMetadata] | None = None) -> Document:
     new_display_name = display_name or f"Created on {datetime.datetime.now()}"
 
     client = RetrieverService()
@@ -375,7 +395,7 @@ def create_document(
                 custom_metadata=metadata)))
 
     assert new_document.name is not None
-    return new_document.name
+    return new_document
 
 
 def delete_document(name: str) -> None:
