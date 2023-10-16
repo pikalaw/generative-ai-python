@@ -388,16 +388,22 @@ def list_documents(corpus_name: str) -> Iterator[Document]:
 
 
 def create_document(
-        corpus_name: str,
+        from_corpus: str | None = None,
         name: str | None = None,
         display_name: str | None = None,
         metadata: List[CustomMetadata] | None = None) -> Document:
+    if from_corpus is None:
+        if name is None:
+            raise ValueError(f"Either from_corpus or name must be given")
+        n = EntityName.from_any(name)
+        from_corpus = repr(EntityName(corpus_id=n.corpus_id))
+
     new_display_name = display_name or f"Created on {datetime.datetime.now()}"
 
     client = RetrieverService()
     new_document = client.create_document(
         CreateDocumentRequest(
-            parent=corpus_name,
+            parent=from_corpus,
             document=Document(
                 name=name,
                 display_name=new_display_name,
