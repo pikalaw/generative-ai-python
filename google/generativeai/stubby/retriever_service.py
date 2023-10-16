@@ -321,6 +321,9 @@ class EntityName(BaseModel):
         name += f"/chunks/{self.chunk_id}"
         return name
 
+    def __str__(self) -> str:
+        return repr(self)
+
     def is_corpus(self) -> bool:
         return self.document_id is None
 
