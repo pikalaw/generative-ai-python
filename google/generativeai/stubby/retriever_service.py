@@ -240,7 +240,7 @@ class RetrieverService(BaseModel):
     def query_corpus(self, request: QueryCorpusRequest) -> QueryCorpusResponse:
         logger.info(
             f"\n\nRetrieverService.query_corpus({pretty(request)})")
-        return QueryCorpusResponse(
+        response = QueryCorpusResponse(
             relevant_chunks=[
                 RelevantChunk(
                     chunk_relevance_score=1,
@@ -254,13 +254,26 @@ class RetrieverService(BaseModel):
                         ],
                     )
                 ),
+                RelevantChunk(
+                    chunk_relevance_score=.05,
+                    chunk=Chunk(
+                        name="corpora/123/documents/456/chunks/999",
+                        data=ChunkData(
+                            value="Much about nothing"),
+                        custom_metadata=[
+                            CustomMetadata(key="author", value="Bob"),
+                        ],
+                    )
+                ),
             ],
         )
+        logger.info(f"returning {pretty(response)}")
+        return response
 
     def query_document(self, request: QueryDocumentRequest) -> QueryDocumentResponse:
         logger.info(
             f"\n\nRetrieverService.query_document({pretty(request)})")
-        return QueryDocumentResponse(
+        response = QueryDocumentResponse(
             relevant_chunks=[
                 RelevantChunk(
                     chunk_relevance_score=1,
@@ -274,8 +287,21 @@ class RetrieverService(BaseModel):
                         ],
                     )
                 ),
+                RelevantChunk(
+                    chunk_relevance_score=.05,
+                    chunk=Chunk(
+                        name="corpora/123/documents/456/chunks/999",
+                        data=ChunkData(
+                            value="Much about nothing"),
+                        custom_metadata=[
+                            CustomMetadata(key="author", value="Bob"),
+                        ],
+                    )
+                ),
             ],
         )
+        logger.info(f"returning {pretty(response)}")
+        return response
 
 
 _name_regex = re.compile(
