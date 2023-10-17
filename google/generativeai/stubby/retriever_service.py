@@ -8,7 +8,6 @@ from typing import Iterator, List, Set
 import uuid
 
 
-default_doc_id = 'default-doc'
 default_page_size = 50
 logger = logging.getLogger(__name__)
 
@@ -374,7 +373,7 @@ def list_corpora() -> Iterator[Corpus]:
         page_token = response.next_page_token
 
 
-def create_corpus(name: str | None = None, display_name: str | None = None) -> Corpus:
+def create_corpus(*, name: str | None = None, display_name: str | None = None) -> Corpus:
     if name is not None:
         # Just check if the name is valid.
         EntityName.from_any(name)
@@ -417,6 +416,7 @@ def list_documents(corpus_name: str) -> Iterator[Document]:
 
 
 def create_document(
+        *,
         from_corpus: str | None = None,
         name: str | None = None,
         display_name: str | None = None,
