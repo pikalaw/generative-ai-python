@@ -155,10 +155,10 @@ class ListDocumentsResponse(BaseModel):
 class RetrieverService(BaseModel):
     _createdDocId: Set[str] = set()
 
-    def get_corpus(self, request: GetCorpusRequest) -> Corpus:
+    def get_corpus(self, request: GetCorpusRequest) -> Corpus | None:
         logger.info(
             f"\n\nRetrieverService.get_corpus({pretty(request)})")
-        return Corpus(name=request.name)
+        return Corpus(name=request.name, display_name="Some corpus")
 
     def create_corpus(self, request: CreateCorpusRequest) -> Corpus:
         logger.info(
@@ -216,7 +216,7 @@ class RetrieverService(BaseModel):
             f"\n\nRetrieverService.get_document({pretty(request)})")
         if request.name in self._createdDocId:
             logger.info("document exists")
-            return Document(name=request.name)
+            return Document(name=request.name, display_name="Some document")
         else:
             logger.info("no such document")
             return None
@@ -373,6 +373,16 @@ def list_corpora() -> Iterator[Corpus]:
         page_token = response.next_page_token
 
 
+def get_corpus(*, name: str) -> Corpus | None:
+    client = RetrieverService()
+    response = client.get_corpus(
+        GetCorpusRequest(
+            name=name
+        )
+    )
+    return response
+
+
 def create_corpus(*, name: str | None = None, display_name: str | None = None) -> Corpus:
     if name is not None:
         # Just check if the name is valid.
@@ -413,6 +423,12 @@ def list_documents(corpus_name: str) -> Iterator[Document]:
         if response.next_page_token is None:
             break
         page_token = response.next_page_token
+
+
+def get_document(*, name: str) -> Document | None:
+    client = RetrieverService()
+    response = client.get_document(GetDocumentRequest(name=name))
+    return response
 
 
 def create_document(
