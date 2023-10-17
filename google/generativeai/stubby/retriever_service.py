@@ -379,7 +379,7 @@ def create_corpus(name: str | None = None, display_name: str | None = None) -> C
         # Just check if the name is valid.
         EntityName.from_any(name)
 
-    new_display_name = display_name or f"Created on {datetime.datetime.now()}"
+    new_display_name = display_name or f"Untitled {datetime.datetime.now()}"
 
     client = RetrieverService()
     new_corpus = client.create_corpus(
@@ -427,7 +427,7 @@ def create_document(
         n = EntityName.from_any(name)
         from_corpus = repr(EntityName(corpus_id=n.corpus_id))
 
-    new_display_name = display_name or f"Created on {datetime.datetime.now()}"
+    new_display_name = display_name or f"Untitled {datetime.datetime.now()}"
 
     client = RetrieverService()
     new_document = client.create_document(
