@@ -373,20 +373,22 @@ def list_corpora() -> Iterator[Corpus]:
         page_token = response.next_page_token
 
 
-def get_corpus(*, name: str) -> Corpus | None:
+def get_corpus(*, corpus_id: str) -> Corpus | None:
     client = RetrieverService()
     response = client.get_corpus(
         GetCorpusRequest(
-            name=name
+            name=str(EntityName(corpus_id=corpus_id))
         )
     )
     return response
 
 
-def create_corpus(*, name: str | None = None, display_name: str | None = None) -> Corpus:
-    if name is not None:
-        # Just check if the name is valid.
-        EntityName.from_any(name)
+def create_corpus(*, corpus_id: str | None = None, display_name: str | None = None) -> Corpus:
+    name: str | None
+    if corpus_id is not None:
+        name = str(EntityName(corpus_id=corpus_id))
+    else:
+        name = None
 
     new_display_name = display_name or f"Untitled {datetime.datetime.now()}"
 
@@ -401,21 +403,21 @@ def create_corpus(*, name: str | None = None, display_name: str | None = None) -
     return new_corpus
 
 
-def delete_corpus(name: str) -> None:
+def delete_corpus(*, corpus_id: str) -> None:
     client = RetrieverService()
     client.delete_corpus(
         DeleteCorpusRequest(
-            name=name,
+            name=str(EntityName(corpus_id=corpus_id)),
             force=True))
 
 
-def list_documents(corpus_name: str) -> Iterator[Document]:
+def list_documents(*, corpus_id: str) -> Iterator[Document]:
     client = RetrieverService()
     page_token: str | None = None
     while True:
         response = client.list_documents(
             ListDocumentsRequest(
-                parent=corpus_name,
+                parent=str(EntityName(corpus_id=corpus_id)),
                 page_size=default_page_size,
                 page_token=page_token))
         for document in response.documents:
@@ -425,30 +427,33 @@ def list_documents(corpus_name: str) -> Iterator[Document]:
         page_token = response.next_page_token
 
 
-def get_document(*, name: str) -> Document | None:
+def get_document(*, corpus_id: str, document_id: str) -> Document | None:
     client = RetrieverService()
-    response = client.get_document(GetDocumentRequest(name=name))
+    response = client.get_document(
+        GetDocumentRequest(
+            name=str(EntityName(
+                corpus_id=corpus_id, document_id=document_id))))
     return response
 
 
 def create_document(
         *,
-        from_corpus: str | None = None,
-        name: str | None = None,
+        corpus_id: str,
+        document_id: str | None = None,
         display_name: str | None = None,
         metadata: List[CustomMetadata] | None = None) -> Document:
-    if from_corpus is None:
-        if name is None:
-            raise ValueError(f"Either from_corpus or name must be given")
-        n = EntityName.from_any(name)
-        from_corpus = repr(EntityName(corpus_id=n.corpus_id))
+    name: str | None
+    if document_id is not None:
+        name = str(EntityName(corpus_id=corpus_id, document_id=document_id))
+    else:
+        name = None
 
     new_display_name = display_name or f"Untitled {datetime.datetime.now()}"
 
     client = RetrieverService()
     new_document = client.create_document(
         CreateDocumentRequest(
-            parent=from_corpus,
+            parent=str(EntityName(corpus_id=corpus_id)),
             document=Document(
                 name=name,
                 display_name=new_display_name,
@@ -458,14 +463,19 @@ def create_document(
     return new_document
 
 
-def delete_document(name: str) -> None:
+def delete_document(*, corpus_id: str, document_id: str) -> None:
     client = RetrieverService()
     client.delete_document(
         DeleteDocumentRequest(
-            name=name,
+            name=str(EntityName(corpus_id=corpus_id, document_id=document_id)),
             force=True))
 
 
-def delete_chunk(name: str) -> None:
+def delete_chunk(*, corpus_id: str, document_id: str, chunk_id: str) -> None:
     client = RetrieverService()
-    client.delete_chunk(DeleteChunkRequest(name=name))
+    client.delete_chunk(
+        DeleteChunkRequest(
+            name=str(EntityName(
+                corpus_id=corpus_id,
+                document_id=document_id,
+                chunk_id=chunk_id))))
