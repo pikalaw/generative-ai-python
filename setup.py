@@ -29,7 +29,8 @@ description = "Google Generative AI High level API client library and tools."
 
 def get_version():
     version = {}
-    version_source = (package_root / "google/generativeai/version.py").read_text()
+    version_source = (
+        package_root / "google/generativeai/version.py").read_text()
     exec(version_source, version)
     version = version["__version__"]
     return version
@@ -43,7 +44,7 @@ else:
     release_status = "Development Status :: 5 - Production/Stable"
 
 dependencies = [
-    "google-ai-generativelanguage==0.3.3",
+    "google-ai-generativelanguage==0.4.0",
     "google-auth",
     "google-api-core",
     "protobuf",
